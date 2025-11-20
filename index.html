@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Semen'e Özel Yarışma</title>
+    <style>
+        /* --- RENK VE TEMEL AYARLAR --- */
+        :root {
+            --milyoner-blue: #020b20; /* Koyu Lacivert */
+            --milyoner-mid: #0f1d42;
+            --milyoner-gold: #dca818; /* Altın Sarısı */
+            --milyoner-orange: #ff9900;
+            --text-white: #ffffff;
+            --correct-green: #1a9e1a;
+            --wrong-red: #bd0a0a;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Verdana', sans-serif;
+            background: radial-gradient(circle at center, #182848 0%, #000000 100%);
+            color: var(--text-white);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* --- ÜST BİLGİ ÇUBUĞU --- */
+        .header-bar {
+            width: 100%;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.8);
+            box-sizing: border-box;
+            position: fixed;
+            top: 0;
+            z-index: 50;
+            border-bottom: 1px solid #333;
+            height: 60px;
+        }
+
+        .logo-text {
+            color: var(--milyoner-gold);
+            font-weight: bold;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .toggle-prize-btn {
+            background: transparent;
+            border: 1px solid var(--milyoner-gold);
+            color: var(--milyoner-gold);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        /* --- OYUN ALANI --- */
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            padding: 70px 15px 20px 15px; /* Kenarlardan 15px boşluk */
+            box-sizing: border-box;
+            max-width: 800px;
+        }
+
+        /* --- SORU KUTUSU --- */
+        .question-box-wrapper {
+            width: 100%;
+            margin-bottom: 20px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+        }
+
+        .line-connector {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #fff, transparent);
+            width: 100%;
+            position: absolute;
+            top: 50%;
+            z-index: 0;
+            opacity: 0.5;
+        }
+
+        .question-box {
+            background: linear-gradient(to bottom, #0f1d42, #020b20);
+            border: 2px solid var(--text-white);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            min-height: 80px;
+            width: 95%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .question-text {
+            font-size: 1rem; /* Mobilde yazı boyutu güvenli */
+            line-height: 1.4;
+            font-weight: 600;
+        }
+
+        /* --- CEVAP ŞIKLARI --- */
+        .options-grid {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .option-btn {
+            position: relative;
+            width: 100%;
+            background: linear-gradient(90deg, #000, #0f1d42 20%, #0f1d42 80%, #000);
+            border: 1px solid #555;
+            border-radius: 30px;
+            padding: 12px 15px;
+            color: var(--text-white);
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            min-height: 50px;
+            box-sizing: border-box; /* Taşmayı önler */
+        }
+
+        .option-btn:active {
+            transform: scale(0.98);
+            border-color: var(--milyoner-gold);
+        }
+
+        .option-letter {
+            color: var(--milyoner-orange);
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .option-text {
+            line-height: 1.3;
+            word-break: break-word; /* Uzun kelimeleri kırar */
+        }
+
+        /* Doğru/Yanlış Renkleri */
+        .option-btn.correct {
+            background: var(--correct-green) !important;
+            border-color: #fff;
+            box-shadow: 0 0 15px var(--correct-green);
+            animation: blink 0.5s 3;
+        }
+
+        .option-btn.incorrect {
+            background: var(--wrong-red) !important;
+        }
+
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        /* --- ÖDÜL LİSTESİ --- */
+        .prize-drawer {
+            position: fixed;
+            top: 0;
+            right: -320px;
+            width: 260px;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            border-left: 2px solid var(--milyoner-gold);
+            transition: right 0.3s ease;
+            z-index: 100;
+            padding-top: 70px;
+            display: flex;
+            flex-direction: column-reverse;
+            overflow-y: auto;
+        }
+
+        .prize-drawer.open { right: 0; }
+
+        .prize-item {
+            padding: 12px 20px;
+            color: #888;
+            border-bottom: 1px solid #222;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+        }
+
+        .prize-item.active {
+            color: var(--milyoner-gold);
+            background: rgba(220, 168, 24, 0.15);
+            font-weight: bold;
+            border-left: 4px solid var(--milyoner-gold);
+        }
+
+        .prize-item.safe { color: #eee; }
+        .close-drawer {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            color: white;
+            font-size: 2rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* --- SONUÇ EKRANI (MOBİL İÇİN GÜNCELLENDİ) --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.92);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            flex-direction: column;
+            padding: 20px; /* Ekran kenarlarından boşluk */
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .modal-content {
+            background: linear-gradient(to bottom, #0f1d42, #000);
+            border: 2px solid var(--milyoner-gold);
+            border-radius: 20px;
+            padding: 25px 20px;
+            width: 90%; /* Ekranın %90'ını kapla */
+            max-width: 350px; /* Çok genişleme */
+            box-shadow: 0 0 30px var(--milyoner-gold);
+            box-sizing: border-box; /* Padding dahil hesapla */
+        }
+
+        .modal-title {
+            color: var(--milyoner-gold);
+            font-size: 1.5rem; /* Mobilde daha iyi sığması için */
+            margin-bottom: 15px;
+            font-weight: bold;
+            line-height: 1.3;
+        }
+        
+        .modal-body { 
+            font-size: 1rem; 
+            line-height: 1.5; 
+            margin-bottom: 25px; 
+            color: #fff;
+            word-wrap: break-word; /* Kelimeleri kır */
+        }
+
+        .restart-btn {
+            background: var(--milyoner-gold);
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%; /* Buton geniş olsun */
+        }
+
+        /* Büyük ekranlar */
+        @media (min-width: 768px) {
+            .options-grid { grid-template-columns: 1fr 1fr; }
+            .game-container { max-width: 900px; }
+            .question-text { font-size: 1.2rem; }
+            .modal-title { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-bar">
+        <div class="logo-text">MİLYONER</div>
+        <button class="toggle-prize-btn" onclick="toggleDrawer()">💰 Ödüller</button>
+    </div>
+
+    <div class="game-container">
+        <div class="question-box-wrapper">
+            <div class="line-connector"></div>
+            <div class="question-box">
+                <div class="question-text" id="question-text">Yükleniyor...</div>
+            </div>
+        </div>
+
+        <div class="options-grid">
+            <button class="option-btn" onclick="checkAnswer('A', this)">
+                <span class="option-letter">A:</span>
+                <span class="option-text" id="opt-A">...</span>
+            </button>
+            <button class="option-btn" onclick="checkAnswer('B', this)">
+                <span class="option-letter">B:</span>
+                <span class="option-text" id="opt-B">...</span>
+            </button>
+            <button class="option-btn" onclick="checkAnswer('C', this)">
+                <span class="option-letter">C:</span>
+                <span class="option-text" id="opt-C">...</span>
+            </button>
+            <button class="option-btn" onclick="checkAnswer('D', this)">
+                <span class="option-letter">D:</span>
+                <span class="option-text" id="opt-D">...</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="prize-drawer" id="prizeDrawer">
+        <button class="close-drawer" onclick="toggleDrawer()">×</button>
+        <div id="prize-list-container"></div>
+    </div>
+
+    <div class="modal-overlay" id="resultModal">
+        <div class="modal-content">
+            <div class="modal-title" id="modalTitle"></div>
+            <div class="modal-body" id="modalBody"></div>
+            <button class="restart-btn" onclick="location.reload()">Tekrar Oyna</button>
+        </div>
+    </div>
+
+    <script>
+        // --- SORULAR ---
+        const questions = [
+            { q: "Türkiye'nin başkenti neresidir?", a: "B", opts: { A: "İstanbul", B: "Ankara", C: "İzmir", D: "Bursa" }, prize: "1.000 TL" },
+            { q: "Bir haftada kaç gün vardır?", a: "B", opts: { A: "5", B: "7", C: "10", D: "12" }, prize: "2.000 TL" },
+            { q: "Dünya'nın doğal uydusu hangisidir?", a: "B", opts: { A: "Phobos", B: "Ay", C: "Güneş", D: "Titan" }, prize: "3.000 TL" },
+            { q: "Kaplan, biyolojide hangi familyaya aittir?", a: "C", opts: { A: "Köpekgiller", B: "Ayıgiller", C: "Kedigiller", D: "Memeliler" }, prize: "5.000 TL" },
+            { q: "Logosu üç köşeli yıldıza benzeyen araba markası hangisidir?", a: "B", opts: { A: "BMW", B: "Mercedes", C: "Audi", D: "Fiat" }, prize: "7.500 TL" },
+            { q: "Kırmızı ve mavinin karışımından hangi renk oluşur?", a: "C", opts: { A: "Yeşil", B: "Turuncu", C: "Mor", D: "Kahverengi" }, prize: "15.000 TL" },
+            { q: "Hangi organımız kanı vücuda pompalar?", a: "D", opts: { A: "Akciğer", B: "Beyin", C: "Karaciğer", D: "Kalp" }, prize: "30.000 TL" },
+            
+            // 8. SORU
+            { 
+                q: "Bütün renkler karışırsa ortaya hangi renk çıkar?", 
+                a: "D", 
+                opts: { 
+                    A: "Turuncu", 
+                    B: "Siyah", 
+                    C: "Eflatun", 
+                    D: "Bu soru çok karışık geçelim. Ne cevap versek bir sorun çıkar. Çok derin bir soru." 
+                }, 
+                prize: "60.000 TL" 
+            },
+
+            { q: "Hangi hayvan geceleri vızz diye gelip bizi ısırarak hayattan soğutur?", a: "B", opts: { A: "Sinek", B: "Sivrisinek", C: "Arı", D: "Karınca" }, prize: "125.000 TL" },
+            
+            // FİNAL SORUSU
+            { 
+                q: "Dünyanın en erdemli, en akıllı ve en güzel kadını kimdir?", 
+                a: "ALL", 
+                opts: { A: "SEMEN", B: "SEMEN", C: "SEMEN", D: "SEMEN" }, 
+                prize: "1.000.000 TL" 
+            }
+        ];
+
+        let currentIdx = 0;
+        let isAnswered = false;
+
+        window.onload = function() {
+            renderPrizeList();
+            loadQuestion();
+        };
+
+        function renderPrizeList() {
+            const container = document.getElementById('prize-list-container');
+            container.innerHTML = "";
+            for (let i = 0; i < questions.length; i++) {
+                const item = document.createElement('div');
+                item.className = "prize-item";
+                if (i === 4 || i === 9) item.classList.add("safe");
+                item.id = "prize-" + i;
+                item.innerHTML = `<span>${i + 1}. Soru</span><span>${questions[i].prize}</span>`;
+                container.appendChild(item); 
+            }
+        }
+
+        function loadQuestion() {
+            isAnswered = false;
+            const data = questions[currentIdx];
+            document.getElementById('question-text').innerText = data.q;
+            document.getElementById('opt-A').innerText = data.opts.A;
+            document.getElementById('opt-B').innerText = data.opts.B;
+            document.getElementById('opt-C').innerText = data.opts.C;
+            document.getElementById('opt-D').innerText = data.opts.D;
+
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.className = "option-btn"; 
+                btn.disabled = false;
+            });
+            updatePrizeHighlight();
+        }
+
+        function checkAnswer(userChoice, btnElement) {
+            if (isAnswered) return;
+            isAnswered = true;
+
+            const data = questions[currentIdx];
+            const isFinal = (currentIdx === questions.length - 1);
+            let isCorrect = false;
+
+            if (data.a === "ALL") isCorrect = true;
+            else isCorrect = (userChoice === data.a);
+
+            if (isCorrect) {
+                btnElement.classList.add('correct');
+                setTimeout(() => {
+                    if (isFinal) showWinModal();
+                    else {
+                        currentIdx++;
+                        loadQuestion();
+                    }
+                }, 1500);
+            } else {
+                btnElement.classList.add('incorrect');
+                const map = { "A":0, "B":1, "C":2, "D":3 };
+                if(data.a !== "ALL") {
+                     document.querySelectorAll('.option-btn')[map[data.a]].classList.add('correct');
+                }
+                setTimeout(showLoseModal, 2000);
+            }
+        }
+
+        function updatePrizeHighlight() {
+            document.querySelectorAll('.prize-item').forEach(el => el.classList.remove('active'));
+            const currentItem = document.getElementById("prize-" + currentIdx);
+            if (currentItem) currentItem.classList.add('active');
+        }
+
+        function toggleDrawer() {
+            document.getElementById('prizeDrawer').classList.toggle('open');
+        }
+
+        function showWinModal() {
+            const modal = document.getElementById('resultModal');
+            document.getElementById('modalTitle').innerHTML = "🎉 İYİ Kİ DOĞDUN<br>SEMEN! 🎉";
+            document.getElementById('modalBody').innerHTML = `
+                <div style="color:#dca818; font-weight:bold; margin-bottom:10px; font-size:1.2rem;">BÜYÜK ÖDÜLÜ KAZANDIN!</div>
+                Dünyanın en erdemli,<br>
+                en akıllı ve<br>
+                en güzel kadını sensin.<br><br>
+                Seni çok seviyorum! ❤️
+            `;
+            modal.style.display = 'flex';
+        }
+
+        function showLoseModal() {
+            const modal = document.getElementById('resultModal');
+            let won = "0 TL";
+            if (currentIdx >= 5) won = "7.500 TL";
+            document.getElementById('modalTitle').innerText = "ELENDİNİZ";
+            document.getElementById('modalBody').innerHTML = `
+                Olsun, gönüllerin şampiyonu sensin.<br>
+                Kazanılan Ödül: ${won}<br><br>
+                Tekrar denemek ister misin?
+            `;
+            modal.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
